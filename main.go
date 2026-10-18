@@ -1,20 +1,44 @@
 package main
 
 import (
-  "log"
-  "net/http"
+	"log"
+	"net/http"
+	"url-shortner/config"
+	"url-shortner/service"
 
-  "github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin"
 )
 
+
+type PostURLReq struct{
+	LongURL string `json:"long_url" binding:"required,url"`
+}
 func main() {
   // Create a Gin router with default middleware (logger and recovery)
   r := gin.Default()
 
+  rdb:=config.NewRedisClient()
+  redisClient:=rdb.Client
+  service:=service.NewService(redisClient)
   r.POST("/shorten",func (c *gin.Context){
-	c.JSON(http.StatusOK,gin.H{
-		"short_url":"http://short.url/abc123",
-	})
+	var req PostURLReq
+	err:=c.ShouldBind(&req)
+	if err!=nil{
+		c.JSON(http.StatusBadRequest,gin.H{"error":err.Error()})
+		return
+	}
+	shortURL:=service.ShortenURL(req.LongURL)
+	c.JSON(http.StatusOK ,gin.H{"short_url":shortURL})
+  })
+
+  r.GET("/:shortURL",func(c *gin.Context){
+	shortURL:=c.Param("shortURL")
+	longURL:=service.GetLongURL(c.Request.Context(),shortURL)
+	if longURL==""{
+		c.JSON(http.StatusNotFound,gin.H{"error":"URL not found"})
+		return
+	}
+	c.Redirect(http.StatusMovedPermanently,longURL)
   })
   // Define a simple GET endpoint
   r.GET("/ping", func(c *gin.Context) {
