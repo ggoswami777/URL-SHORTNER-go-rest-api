@@ -1,0 +1,28 @@
+# Compiled binaries / executables
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+dist/
+
+# Test binaries
+*.test
+*.out
+
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
+
+# IDE & Editor specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+Thumbs.db
+Desktop.ini
+.DS_Store
