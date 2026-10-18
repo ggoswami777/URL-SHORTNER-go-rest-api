@@ -5,7 +5,7 @@ import (
 )
 
 type RedisClient struct{
-	client *redis.Client
+	Client *redis.Client
 }
 
 func NewRedisClient() *RedisClient{
@@ -17,6 +17,6 @@ func NewRedisClient() *RedisClient{
 	
 
 	return &RedisClient{
-		client:rdb,
+		Client:rdb,
 	}
 }
