@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	redis "github.com/redis/go-redis/v9"
@@ -12,7 +13,7 @@ type URLService struct {
 }
 
 type ShortURLRedis struct{
-	ShortURL string
+	Shorten string
 	LongURL string
 	CreatedAt int64
 	
@@ -27,25 +28,39 @@ func URLShortnerAlgorithm(longURL string) string{
 	return "abc123"
 }
 func (s *URLService) ShortenURL(ctx context.Context,longURL string) (string,error){
-	shortUrl:=URLShortnerAlgorithm(longURL)
+	shorten:=URLShortnerAlgorithm(longURL)
+	
 	shortURLRedis:=&ShortURLRedis{
-		ShortURL: shortUrl,
+		Shorten:shorten,
 		LongURL: longURL,
 		CreatedAt: time.Now().Unix(),
 	}
-
-	err:=s.redisClient.Set(ctx,shortUrl,shortURLRedis,0).Err()
+	// marshal and store in redis
+	shortURLMarshal,err:=json.Marshal(shortURLRedis)
 	if err!=nil{
 		return "",err
 	}
-
-	return "http://short.url/abc123",nil
+	err=s.redisClient.Set(ctx,shorten,shortURLMarshal,0).Err()
+	if err!=nil{
+		return "",err
+	}
+	shortURL:= "http://localhost:3000/"+shorten
+	return shortURL,nil
 }
 
-func(s *URLService) GetLongURL(ctx context.Context, shortURL string) string{
+func(s *URLService) GetLongURL(ctx context.Context, shortURL string) (string,error){
 	val,err:=s.redisClient.Get(ctx,shortURL).Result()
-	if err==nil{
-		return val
+	
+	if err==redis.Nil{
+		return "",nil
+	}else if err!=nil{
+		return "",err
 	}
-	return ""
+	var shortURLRedis ShortURLRedis
+
+	err=json.Unmarshal([]byte(val),&shortURLRedis)
+	if err==nil{
+		return shortURLRedis.LongURL,nil
+	}
+	return "",err
 }

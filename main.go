@@ -38,7 +38,10 @@ func main() {
 
   r.GET("/:shortURL",func(c *gin.Context){
 	shortURL:=c.Param("shortURL")
-	longURL:=service.GetLongURL(c.Request.Context(),shortURL)
+	longURL,err:=service.GetLongURL(c.Request.Context(),shortURL)
+	if err!=nil{
+		c.JSON(http.StatusNotFound,gin.H{"error":"URL not found"})
+	}
 	if longURL==""{
 		c.JSON(http.StatusNotFound,gin.H{"error":"URL not found"})
 		return
