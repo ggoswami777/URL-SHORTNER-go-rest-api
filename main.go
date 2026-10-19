@@ -22,12 +22,17 @@ func main() {
   service:=service.NewService(redisClient)
   r.POST("/shorten",func (c *gin.Context){
 	var req PostURLReq
+	ctx:=c.Request.Context()
 	err:=c.ShouldBind(&req)
 	if err!=nil{
 		c.JSON(http.StatusBadRequest,gin.H{"error":err.Error()})
 		return
 	}
-	shortURL:=service.ShortenURL(req.LongURL)
+	shortURL,err:=service.ShortenURL(ctx,req.LongURL)
+	if err!=nil{
+		c.JSON(http.StatusBadRequest,gin.H{"error":err.Error()})
+		return
+	}
 	c.JSON(http.StatusOK ,gin.H{"short_url":shortURL})
   })
 
