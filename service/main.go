@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"math/rand"
 	"time"
 
 	redis "github.com/redis/go-redis/v9"
@@ -24,17 +25,26 @@ func NewService(redisClient *redis.Client) *URLService {
 		redisClient: redisClient,
 	}
 }
-func URLShortnerAlgorithm(longURL string) string{
-	return "abc123"
+
+const charset="abcdefghijklmnopqrstuvwxyz1234567890"
+var seededRand=rand.New(rand.NewSource(time.Now().UnixNano()))
+func URLShortnerAlgorithm() string{
+	const length=6
+	b:=make([]byte,length)
+	for i:=range b{
+		b[i]=charset[seededRand.Intn(len(charset))]
+	}
+	return string (b)
 }
 func (s *URLService) ShortenURL(ctx context.Context,longURL string) (string,error){
-	shorten:=URLShortnerAlgorithm(longURL)
+	shorten:=URLShortnerAlgorithm()
 	
 	shortURLRedis:=&ShortURLRedis{
 		Shorten:shorten,
 		LongURL: longURL,
 		CreatedAt: time.Now().Unix(),
 	}
+	
 	// marshal and store in redis
 	shortURLMarshal,err:=json.Marshal(shortURLRedis)
 	if err!=nil{
